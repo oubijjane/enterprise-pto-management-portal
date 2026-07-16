@@ -1,0 +1,20 @@
+# Java / Spring Boot
+target/
+.mvn/
+*.log
+*.class
+src/main/resources/application-*.properties
+
+# React / Node
+node_modules/
+build/
+.env
+.env.local
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
