@@ -273,8 +273,8 @@ public class VacationRequestServiceImpl implements VacationRequestService {
     private void sendEmail(VacationRequest vacationRequest, String messageToBeSent, String statusUpdate) {
         List<String> emails = new ArrayList<>();
 
-        emails.add("nbouanani@verauto.ma ");
-        emails.add("hanane@verauto.ma ");
+        emails.add("place holder");
+        emails.add("place holder");
         if(vacationRequest.getEmployee().getEmail() != null && !vacationRequest.getEmployee().getEmail().isEmpty()) {
 
             emails.add(vacationRequest.getEmployee().getEmail());
