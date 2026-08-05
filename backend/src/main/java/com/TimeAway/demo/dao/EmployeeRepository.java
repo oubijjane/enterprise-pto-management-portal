@@ -26,11 +26,16 @@ public interface EmployeeRepository extends CrudRepository<Employee, Integer> {
             "WHERE e.loginName = :loginName")
     Employee findLoginName(String loginName);
 
-    @EntityGraph(attributePaths = {"employee", "employee.department"})
+
     @Query("SELECT e FROM Employee e " +
             "JOIN FETCH e.department d " +
             "WHERE d.id = :id")
     Page<Employee> findEmployeeByDepartmentId(@Param("id") Long id ,Pageable pageable);
+
+    @Query("SELECT e FROM Employee e " +
+            "JOIN FETCH e.roles ur " +
+            "WHERE ur.role.id = :id")
+    List<Employee> findEmployeeByRoleId(@Param("id") Long id);
 
 
 

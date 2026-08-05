@@ -90,13 +90,15 @@ export function RequestsView({ requests, currentStatus, onUpdate, onSelect, role
 }
 
 export function NewRequestView({ employees, onAddRequest }) {
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
     watch,
     reset,
     setValue,
-    formState: { isValid, isSubmitting }
+    formState: { isValid, isSubmitting, errors }
   } = useForm({
     mode: 'onChange',
     defaultValues: {
@@ -118,27 +120,39 @@ export function NewRequestView({ employees, onAddRequest }) {
 
   const isHalfDay = watchedHalfDayType && watchedHalfDayType !== "FULL_DAY";
 
+  // Improved date calculation: handles invalid chronological order
   const getDaysBetween = (from, to, halfDayType) => {
-    if (!from && !to) return 0;
+    if (!from) return 0;
+    
     if (halfDayType && halfDayType !== "FULL_DAY") {
-      const selectedDate = from || to;
-      return selectedDate ? 0.5 : 0;
+      return 0.5;
     }
-    if (!from || !to) return 0;
-    const diff = Math.ceil((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24)) + 1;
-    return diff > 0 ? diff : 0;
+    
+    if (!to) return 0;
+
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+
+    if (toDate < fromDate) return 0; // Prevent negative days
+
+    // Note: If you need to exclude weekends, you would implement a loop here 
+    // to count only Mon-Fri instead of simple math.
+    const diff = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
+    return diff;
   };
 
   useEffect(() => {
     if (isHalfDay && watchedFrom) {
-      setValue("to", watchedFrom);
+      setValue("to", watchedFrom, { shouldValidate: true });
     }
   }, [isHalfDay, watchedFrom, setValue]);
 
   const requestedDays = getDaysBetween(watchedFrom, watchedTo, watchedHalfDayType);
-  const selectedEmployee = employees.find(e => e.id === parseInt(watchedEmployeeId));
+  const selectedEmployee = employees.find(e => e.id === parseInt(watchedEmployeeId, 10));
+  
   const remainingDays = selectedEmployee
-    ? selectedEmployee.thisYearVacationDays + selectedEmployee.lastYearVacationDays - selectedEmployee.usedVacationDays - selectedEmployee.lastYearUsedVacationDays
+    ? (selectedEmployee.thisYearVacationDays + selectedEmployee.lastYearVacationDays) - 
+      (selectedEmployee.usedVacationDays + selectedEmployee.lastYearUsedVacationDays)
     : 0;
 
   const onSubmit = async (data) => {
@@ -146,9 +160,11 @@ export function NewRequestView({ employees, onAddRequest }) {
     try {
       const normalizedData = {
         ...data,
-        from: isHalfDay ? data.from || data.to : data.from,
-        to: isHalfDay ? data.from || data.to : data.to,
+        employeeId: parseInt(data.employeeId, 10), // Ensure integer for API
+        from: isHalfDay ? data.from : data.from,
+        to: isHalfDay ? data.from : data.to,
       };
+      
       const normalizedDays = getDaysBetween(normalizedData.from, normalizedData.to, normalizedData.halfDayType);
 
       await onAddRequest(normalizedData, normalizedDays, selectedEmployee);
@@ -162,103 +178,118 @@ export function NewRequestView({ employees, onAddRequest }) {
   };
 
   return (
-    <div className="form-container">
-      <div className="view-header">
-        <h1>Nouvelle demande de congé</h1>
-        <p className="text-muted view-subtitle">Soumettez une nouvelle demande de congé pour un employé.</p>
-      </div>
-
-      {submitted && (
-        <div className="alert-success">
-          ✓ Demande soumise avec succès !
+    <div className="modal-overlay">
+      <div className="modal-card request-modal-card">
+        {/* Header logic remains the same */}
+        <div className="modal-header">
+          <div>
+            <h2 className="section-title" style={{ margin: 0 }}>Nouvelle demande de congé</h2>
+            <p className="text-muted view-subtitle" style={{ marginTop: '6px' }}>
+              Soumettez une nouvelle demande de congé pour un employé.
+            </p>
+          </div>
+          <button type="button" className="btn-text" onClick={() => navigate(-1)}>
+            Fermer
+          </button>
         </div>
-      )}
-      {apiError && (
-        <div className="alert-error">
-          {apiError}
-        </div>
-      )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="card flex-col gap-5">
-
-        <Field label="Employé">
-          <select
-            className="input-field"
-            {...register("employeeId", { required: true })}
-          >
-            <option value="">Sélectionner un employé…</option>
-            {employees.map(e => (
-              <option key={e.id} value={e.id}>{e.firstName} {e.lastName}</option>
-            ))}
-          </select>
-        </Field>
-
-        {selectedEmployee && (
-          <div className="balance-preview">
-            <Stat label="Jours totaux" value={selectedEmployee.thisYearVacationDays + selectedEmployee.lastYearVacationDays} color="#6C63FF" />
-            <Stat label="Utilisés" value={selectedEmployee.usedVacationDays + selectedEmployee.lastYearUsedVacationDays} color="#F59E0B" />
-            <Stat label="Restants" value={remainingDays} color="#10B981" />
+        {submitted && (
+          <div className="alert-success">
+            ✓ Demande soumise avec succès !
+          </div>
+        )}
+        {apiError && (
+          <div className="alert-error">
+            {apiError}
           </div>
         )}
 
-        {isHalfDay ? (
-          <Field label="Date">
-            <input
-              type="date"
+        <form onSubmit={handleSubmit(onSubmit)} className="flex-col gap-5">
+
+          <Field label="Employé">
+            <select
               className="input-field"
-              {...register("from", { required: true })}
-            />
+              {...register("employeeId", { required: true })}
+            >
+              <option value="">Sélectionner un employé…</option>
+              {employees.map(e => (
+                <option key={e.id} value={e.id}>{e.firstName} {e.lastName}</option>
+              ))}
+            </select>
           </Field>
-        ) : (
-          <div className="date-grid">
-            <Field label="Du">
+
+          {selectedEmployee && (
+            <div className="balance-preview">
+              <Stat label="Jours totaux" value={selectedEmployee.thisYearVacationDays + selectedEmployee.lastYearVacationDays} color="#6C63FF" />
+              <Stat label="Utilisés" value={selectedEmployee.usedVacationDays + selectedEmployee.lastYearUsedVacationDays} color="#F59E0B" />
+              <Stat label="Restants" value={remainingDays} color="#10B981" />
+            </div>
+          )}
+
+          {isHalfDay ? (
+            <Field label="Date">
               <input
                 type="date"
                 className="input-field"
                 {...register("from", { required: true })}
               />
             </Field>
-            <Field label="Au">
-              <input
-                type="date"
-                className="input-field"
-                {...register("to", { required: true })}
-              />
-            </Field>
+          ) : (
+            <div className="date-grid">
+              <Field label="Du">
+                <input
+                  type="date"
+                  className="input-field"
+                  {...register("from", { required: true })}
+                />
+              </Field>
+              <Field label="Au">
+                <input
+                  type="date"
+                  className={`input-field ${errors.to ? 'input-error' : ''}`}
+                  {...register("to", { 
+                    required: true,
+                    validate: value => !watchedFrom || value >= watchedFrom || "La date de fin doit être après la date de début"
+                  })}
+                />
+                {errors.to && <span className="error-text" style={{color: 'red', fontSize: '12px'}}>{errors.to.message}</span>}
+              </Field>
+            </div>
+          )}
+
+          {/* Type and Reason fields remain the same */}
+          <Field label="Type de demande">
+            <select className="input-field" {...register("halfDayType", { required: true })}>
+              <option value="FULL_DAY">Journée complète</option>
+              <option value="AM">Demi-journée (matin)</option>
+              <option value="PM">Demi-journée (après-midi)</option>
+            </select>
+          </Field>
+
+          <Field label="Motif">
+            <select className="input-field" {...register("reason", { required: true })}>
+              <option value="">Sélectionner un motif…</option>
+              <option value="Vacances">Congés payés</option>
+              <option value="Maladie">Maladie</option>
+              <option value="Personnel">Personnel</option>
+            </select>
+          </Field>
+
+          <div className="flex-row justify-between gap-3">
+            <button type="button" className="btn-text" onClick={() => navigate(-1)}>
+              Annuler
+            </button>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={!isValid || isSubmitting || requestedDays <= 0}
+              style={{ width: 'auto' }}
+            >
+              {isSubmitting ? 'Soumission...' : 'Soumettre la demande ✈'}
+            </button>
           </div>
-        )}
-
-        <Field label="Type de demande">
-          <select
-            className="input-field"
-            {...register("halfDayType", { required: true })}
-          >
-            <option value="FULL_DAY">Journée complète</option>
-            <option value="AM">Demi-journée (matin)</option>
-            <option value="PM">Demi-journée (après-midi)</option>
-          </select>
-        </Field>
-
-        <Field label="Motif">
-          <select
-            className="input-field"
-            {...register("reason", { required: true })}
-          >
-            <option value="">Sélectionner un employé…</option>
-            <option value="Vacances">Congés payés</option>
-            <option value="Maladie">Maladie</option>
-            <option value="Personnel">Personnel</option>
-          </select>
-        </Field>
-
-        <button
-          type="submit"
-          className="btn-primary"
-          disabled={!isValid || isSubmitting || requestedDays <= 0}
-        >
-          {isSubmitting ? 'Soumission...' : 'Soumettre la demande ✈'}
-        </button>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
@@ -273,10 +304,11 @@ export const formatEmployeePayload = (data) => {
     phone: data.phone || null,
     hiringDate: data.hiringDate || null,
     departmentDTO: {
-      id: data.department
+      // Cast to number if the API expects an integer ID
+      id: data.department ? parseInt(data.department, 10) : null
     },
     role: [{
-      id: data.role
+      id: data.role ? parseInt(data.role, 10) : null
     }]
   };
 };
@@ -814,7 +846,8 @@ export function MyProfileView({
   historyPage,
   historyTotalPages,
   setHistoryPage,
-  historyLoading
+  historyLoading,
+  onEditRequest
 }) {
 
   // Pagination Window Logic
@@ -866,7 +899,7 @@ export function MyProfileView({
             ) : (
               <div className="flex-col">
                 {userProfileData.vacationHistory.map(req => (
-                  <RequestRow key={req.id} r={req} compact />
+                  <RequestRow key={req.id} r={req} compact onEditRequest={onEditRequest} />
                 ))}
                 {userProfileData.vacationHistory.length === 0 && (
                   <p className="text-muted">Aucun congé trouvé.</p>

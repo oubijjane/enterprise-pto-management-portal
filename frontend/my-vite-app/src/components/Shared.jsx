@@ -18,7 +18,7 @@ export function Stat({ label, value, color }) {
   );
 }
 
-export function RequestRow({ r, onUpdate, onSelect, compact, role }) {
+export function RequestRow({ r, onUpdate, onSelect, compact, role, onEditRequest }) {
   const displayName = r.name || r.firstName || r.employeeName || r.requesterName ||r.employeeDTO.firstName + " " + r.employeeDTO.lastName ||"Inconnu";
   const initials = displayName
     .split(" ")
@@ -66,6 +66,17 @@ export function RequestRow({ r, onUpdate, onSelect, compact, role }) {
           <span className="status-dot" />
           {displayStatus}
         </span>
+        {(r.status === "Pending" || r.status === "PENDING") && onEditRequest && (
+          <button
+            className="action-btn edit"
+            onClick={(event) => {
+              event.stopPropagation();
+              onEditRequest(r);
+            }}
+          >
+            Modifier
+          </button>
+        )}
         {r.status === "Pending" && !compact && onUpdate && (
           <div className="flex-row gap-2" style={{ marginLeft: "6px" }}>         
                 <button className="action-btn approve" onClick={(event) => { event.stopPropagation(); onUpdate(r.id, "Approved"); }}>Approuver</button>

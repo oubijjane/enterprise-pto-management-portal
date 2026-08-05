@@ -116,8 +116,12 @@ export default function AdminRequestReviewPage() {
   const [loading, setLoading] = useState(true);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [departmentRequestsLoading, setDepartmentRequestsLoading] = useState(false);
+
+  // --- Modal State ---
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, action: null });
   
   const isPending = selectedRequest?.status?.toLowerCase() === 'pending';
+
   useEffect(() => {
     const loadAll = async () => {
       try {
@@ -175,24 +179,48 @@ export default function AdminRequestReviewPage() {
     let finalUpdatedRequest;
     try {
       if(role === "ROLE_ADMIN") {
-      const updatedRequest = newStatus === 'Approved'
-        ? await requestService.approveRequest(selectedRequest.id)
-        : await requestService.rejectRequest(selectedRequest.id);
+        const updatedRequest = newStatus === 'Approved'
+          ? await requestService.approveRequest(selectedRequest.id)
+          : await requestService.rejectRequest(selectedRequest.id);
         finalUpdatedRequest = updatedRequest;
-      }else if(role === "ROLE_MANAGER") {
-         const updatedRequest = newStatus === 'Approved'
-        ? await requestService.approveByManger(selectedRequest.id)
-        : await requestService.rejectByManger(selectedRequest.id);
+      } else if(role === "ROLE_MANAGER") {
+        const updatedRequest = newStatus === 'Approved'
+          ? await requestService.approveByManger(selectedRequest.id)
+          : await requestService.rejectByManger(selectedRequest.id);
         finalUpdatedRequest = updatedRequest;
       }
       const normalizedUpdate = normalizeRequest(finalUpdatedRequest);
       setRequests(requests.map((req) => req.id === selectedRequest.id ? normalizedUpdate : req));
-      setSelectedRequest(normalizedUpdate)
+      setSelectedRequest(normalizedUpdate);
     } catch (error) {
       console.error('Failed to update request status:', error);
     } finally {
       setStatusUpdating(false);
     }
+  };
+
+  // --- Intercept Action to show Modal if conditions are met ---
+  const handleActionClick = (newStatus) => {
+    const hasResponsible = selectedRequest?.employeeDTO?.departmentDTO?.responsible != null;
+    const managerStatus = selectedRequest?.approvedByResponsible?.toUpperCase();
+    const managerNotApproved = managerStatus !== 'APPROVED';
+
+    // If Admin is acting, and there is a responsible manager, but the manager hasn't approved yet
+    if (role === "ROLE_ADMIN" && hasResponsible && managerNotApproved) {
+      setConfirmModal({ isOpen: true, action: newStatus });
+    } else {
+      // Proceed directly for Managers or if already approved by Manager
+      handleStatusChange(newStatus);
+    }
+  };
+
+  const confirmAction = () => {
+    handleStatusChange(confirmModal.action);
+    setConfirmModal({ isOpen: false, action: null });
+  };
+
+  const closeConfirmModal = () => {
+    setConfirmModal({ isOpen: false, action: null });
   };
 
   const handleSelectRequest = (req) => {
@@ -253,7 +281,7 @@ export default function AdminRequestReviewPage() {
         request={selectedRequest} 
         isPending={isPending} 
         statusUpdating={statusUpdating} 
-        onStatusChange={handleStatusChange} 
+        onStatusChange={handleActionClick} 
         onBack={() => navigate('/requests')} 
         role={role}
         enable={isApprovalEnabled} 
@@ -273,6 +301,46 @@ export default function AdminRequestReviewPage() {
           overlappingRequests={overlappingRequests} 
           onSelectRequest={handleSelectRequest} 
         />
+      )}
+
+      {/* --- Confirmation Modal --- */}
+      {confirmModal.isOpen && (
+        <div className="modal-overlay" onClick={closeConfirmModal}>
+          <div className="modal-card request-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h2 className="section-title" style={{ margin: 0, color: '#dc2626' }}>Confirmation requise</h2>
+                <p className="text-muted view-subtitle" style={{ marginTop: '6px' }}>
+                  Le responsable n'a pas encore validé cette demande.
+                </p>
+              </div>
+              <button type="button" className="btn-text" onClick={closeConfirmModal}>Fermer</button>
+            </div>
+            
+            <div className="flex-col gap-5" style={{ marginTop: '16px' }}>
+              <p>
+                Le responsable de ce département (<strong>{selectedRequest.employeeDTO?.departmentDTO?.responsible?.firstName} {selectedRequest.employeeDTO?.departmentDTO?.responsible?.lastName}</strong>) n'a pas encore approuvé cette demande.
+                <br /><br />
+                Statut actuel du responsable : <strong>{selectedRequest.approvedByResponsible || 'En attente'}</strong>
+              </p>
+              
+              <div className="alert-error" style={{ backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }}>
+                Êtes-vous sûr de vouloir forcer l'action <strong>{confirmModal.action === 'Approved' ? "d'approbation" : 'de rejet'}</strong> en tant qu'administrateur ?
+              </div>
+
+              <div className="flex-row gap-2 justify-between mt-4">
+                <button className="btn-text" onClick={closeConfirmModal}>Annuler</button>
+                <button 
+                  className={`btn-primary ${confirmModal.action === 'Rejected' ? 'reject' : ''}`} 
+                  onClick={confirmAction}
+                  style={{ width: 'auto', backgroundColor: confirmModal.action === 'Rejected' ? '#ef4444' : undefined }}
+                >
+                  Oui, {confirmModal.action === 'Approved' ? 'approuver' : 'rejeter'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

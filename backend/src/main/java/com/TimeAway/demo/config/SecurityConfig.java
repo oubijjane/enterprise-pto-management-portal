@@ -35,23 +35,17 @@ public class SecurityConfig {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
-    @Bean
+    /*@Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring()
                 .requestMatchers("/assets/**", "/static/**", "/static/assets/verauto-logo.png", "/*.js", "/*.css", "/manifest.json");
-    }
+    }*/
     @Bean
     public SecurityFilterChain devFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.disable()) // Helpful if your frontend runs on a different localhost port
                 .authorizeHttpRequests(auth -> auth
-                        .dispatcherTypeMatchers(DispatcherType.FORWARD).permitAll()
-                        .requestMatchers("/{path:[^\\.]*}", "/**/{path:[^\\.]*}").permitAll()
-                        .requestMatchers("/api/auth/**", "/uploads/**", "/api/internal/purge-images").permitAll()
-                        .requestMatchers("/","/index.html","/favicon.svg", "/static/index.html", "/static/**", "/manifest.webmanifest", "/static/assets/manifest.webmanifest",
-                                "/assets/**", "/static/timeAway.png", "/*.js", "/*.css", "/firebase-messaging-sw.js", "/*.json","/static/timeAway-192x192.png","/static/favicon.svg","/timeAway-192x192.png",
-                                "/static/*.json", "/vite.svg", "/static/vite.svg", "/static/assets/vite.svg", "/timeAway.png", "/placeholder.jpeg", "/static/placeholder.jpeg").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/request/cancelPendingVacationRequest/**").hasAnyRole("EMPLOYEE","HR","ADMIN")

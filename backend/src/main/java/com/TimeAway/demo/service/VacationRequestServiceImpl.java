@@ -242,6 +242,18 @@ public class VacationRequestServiceImpl implements VacationRequestService {
         exictingVacationRequest.setToDate(vacationRequest.getToDate());
         exictingVacationRequest.setHalfDayType(vacationRequest.getHalfDayType());
 
+        List<HolidayDTO> holidayDTOS = holidayService.findAllHolidaysByDateRange(
+                vacationRequest.getFromDate(),
+                vacationRequest.getToDate()
+        );
+        BigDecimal numberOfDays = calculateRequestedDays(
+                vacationRequest.getFromDate(),
+                vacationRequest.getToDate(),
+                holidayDTOS,
+                vacationRequest.getHalfDayType()
+        );
+        exictingVacationRequest.setNumberOfDays(numberOfDays);
+
         return vacationRequestRepository.save(exictingVacationRequest);
     }
 
@@ -272,9 +284,16 @@ public class VacationRequestServiceImpl implements VacationRequestService {
 
     private void sendEmail(VacationRequest vacationRequest, String messageToBeSent, String statusUpdate) {
         List<String> emails = new ArrayList<>();
+        long id = 1;
+        List<Employee>  employees = employeeRepository.findEmployeeByRoleId(id);
+        for (Employee employee : employees) {
+            if(!employee.getEmail().isEmpty()) {
+                emails.add(employee.getEmail());
+                System.out.println("this is the email");
+            }
+        }
 
-        emails.add("place holder");
-        emails.add("place holder");
+
         if(vacationRequest.getEmployee().getEmail() != null && !vacationRequest.getEmployee().getEmail().isEmpty()) {
 
             emails.add(vacationRequest.getEmployee().getEmail());
@@ -630,7 +649,16 @@ public class VacationRequestServiceImpl implements VacationRequestService {
         DepartmentDTO departmentDTO = new DepartmentDTO();
         departmentDTO.setId(employee.getDepartment().getId());
         departmentDTO.setName(employee.getDepartment().getName());
-        employeeDTO.setDepartmentDTO(departmentDTO);
+        EmployeeDTO responsibleDTO = new EmployeeDTO();
+
+        if(request.getEmployee().getDepartment() != null && request.getEmployee().getDepartment().getResponsible() != null) {
+            responsibleDTO.setId(request.getEmployee().getDepartment().getResponsible().getId());
+            responsibleDTO.setFirstName(request.getEmployee().getDepartment().getResponsible().getFirstName());
+            responsibleDTO.setLastName(request.getEmployee().getDepartment().getResponsible().getLastName());
+            departmentDTO.setResponsible(responsibleDTO);
+            employeeDTO.setDepartmentDTO(departmentDTO);
+        }
+
         employeeDTO.setRemainingVacationDays(request.getNumberOfDays());
         vacationRequestDto.setEmployeeDTO(employeeDTO);
 

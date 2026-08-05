@@ -128,6 +128,16 @@ export const getRequestByEmployeeId = async (page = 0, size = 10, id) => {
     }
 };
 
+export const updateRequest = async (requestPayload) => {
+    try {
+        const response = await api.put('/v1/request', requestPayload);
+        return normalizeRequest(response.data);
+    } catch (error) {
+        console.error('Error updating request:', error);
+        throw error;
+    }
+};
+
 const updateRequestStatus = async (id, endpoint) => {
     try {
         const response = await api.put(`/v1/request/${endpoint}/${id}`);
@@ -163,4 +173,4 @@ const rejectRequest = async (id) => updateRequestStatus(id, 'rejected');
 
 export default { getPendingRequests, getAllRequests, getRequestById, approveRequest, 
     rejectRequest, getNonRejectedRequests,getAllRequestsByStatus, 
-    getRequestByEmployeeId, countRequestByStatus, getAllRequestsByStatusByUserDepartment, approveByManger, rejectByManger, getAllRequestsUserDepartmentbyStatus };
+    getRequestByEmployeeId, countRequestByStatus, getAllRequestsByStatusByUserDepartment, approveByManger, rejectByManger, getAllRequestsUserDepartmentbyStatus, updateRequest };

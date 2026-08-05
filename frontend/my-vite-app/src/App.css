@@ -152,6 +152,7 @@ h2.section-title { font-size: 16px; font-weight: 600; color: #1A1A1A; margin-bot
 .action-btn:hover { opacity: 0.85; transform: translateY(-1px); }
 .action-btn.approve { background: rgba(16, 185, 129, 0.1); color: #10B981; }
 .action-btn.reject { background: rgba(239, 68, 68, 0.1); color: #EF4444; }
+.action-btn.edit { background: rgba(108, 99, 255, 0.12); color: #6C63FF; }
 
 .btn-filter { padding: 6px 14px; border-radius: 8px; border: 1px solid #E5E5E7; background: #FFFFFF; color: #666666; font-size: 13px; cursor: pointer; font-weight: 500; font-family: 'DM Sans', sans-serif; }
 .btn-filter.active { border-color: #6C63FF; background: rgba(108,99,255,0.1); color: #6C63FF; }
@@ -235,6 +236,35 @@ textarea.input-field { resize: vertical; min-height: 80px; }
 .status-CANCELLATION_REQUESTED { background: rgba(107, 99, 255, 0.1); color: #6C63FF; }
 .status-CANCELLATION_REQUESTED .status-dot { background: #6C63FF; }
 
+/* --- Modal --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-card {
+  width: min(560px, 100%);
+  background: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #E5E5E7;
+  padding: 24px;
+  box-shadow: 0 28px 80px rgba(17, 24, 39, 0.24);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
 /* --- Review Cards & Layout --- */
 .review-card {
   margin-bottom: 24px;
@@ -276,6 +306,7 @@ textarea.input-field { resize: vertical; min-height: 80px; }
 
 .review-btn.approve { background-color: #10b981; }
 .review-btn.reject { background-color: #ef4444; }
+.review-btn.edit { background-color: #6C63FF; }
 .review-btn:disabled { cursor: not-allowed; opacity: 0.7; }
 .review-btn:not(:disabled) { cursor: pointer; }
 
