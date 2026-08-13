@@ -173,6 +173,28 @@ export default function AdminRequestReviewPage() {
     loadDepartmentRequests();
   }, [selectedRequest?.from, selectedRequest?.to]);
 
+  const refreshData = async () => {
+    try {
+      // Refresh the selected request
+      const refreshedRequest = await requestService.getRequestById(requestId);
+      const normalizedRefreshed = normalizeRequest(refreshedRequest);
+      setSelectedRequest(normalizedRefreshed);
+
+      // Refresh the all requests list
+      const all = await requestService.getNonRejectedRequests(0, 500);
+      setRequests(all?.content?.map(normalizeRequest) || []);
+      
+      // Refresh department requests
+      if (normalizedRefreshed?.from && normalizedRefreshed?.to) {
+        const response = await requestService.getAllRequestsUserDepartmentbyStatus(0, 100, requestId);
+        const list = Array.isArray(response) ? response : response?.content || [];
+        setDepartmentRequests(list.map(normalizeRequest));
+      }
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+    }
+  };
+
   const handleStatusChange = async (newStatus) => {
     if (!selectedRequest || statusUpdating) return;
     setStatusUpdating(true);
@@ -192,6 +214,9 @@ export default function AdminRequestReviewPage() {
       const normalizedUpdate = normalizeRequest(finalUpdatedRequest);
       setRequests(requests.map((req) => req.id === selectedRequest.id ? normalizedUpdate : req));
       setSelectedRequest(normalizedUpdate);
+      
+      // Refresh all data after successful status change
+      await refreshData();
     } catch (error) {
       console.error('Failed to update request status:', error);
     } finally {
@@ -400,6 +425,12 @@ const TargetRequestCard = ({ request, isPending, statusUpdating, onStatusChange,
       <div className="detail-col">
         <div className="review-label">Soumise le</div>
         <div>{formatDateWithTime(request.submittedAt || request.createdAt || '')}</div>
+      </div>
+      <div className="detail-col">
+        <div className="review-label">Jours restants</div>
+        <div style={{ fontWeight: '600', fontSize: '1.125rem', color: request.remainingVacationDays >= request.days ? '#10b981' : '#ef4444' }}>
+          {request.remainingVacationDays || 0} jour(s)
+        </div>
       </div>
     </div>
   </div>

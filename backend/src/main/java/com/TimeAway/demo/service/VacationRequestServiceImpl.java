@@ -287,7 +287,7 @@ public class VacationRequestServiceImpl implements VacationRequestService {
         long id = 1;
         List<Employee>  employees = employeeRepository.findEmployeeByRoleId(id);
         for (Employee employee : employees) {
-            if(!employee.getEmail().isEmpty()) {
+            if(employee.getEmail() != null && !employee.getEmail().isEmpty()) {
                 emails.add(employee.getEmail());
                 System.out.println("this is the email");
             }
@@ -659,7 +659,7 @@ public class VacationRequestServiceImpl implements VacationRequestService {
             employeeDTO.setDepartmentDTO(departmentDTO);
         }
 
-        employeeDTO.setRemainingVacationDays(request.getNumberOfDays());
+        employeeDTO.setRemainingVacationDays(employee.getRemainingDays());
         vacationRequestDto.setEmployeeDTO(employeeDTO);
 
         return vacationRequestDto;

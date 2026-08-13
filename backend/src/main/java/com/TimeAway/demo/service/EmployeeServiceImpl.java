@@ -343,7 +343,9 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (employee.getLastName() != null && !employee.getLastName().isBlank()) {
             existingEmployee.setLastName(employee.getLastName());
         }
-        if (employee.getEmail() != null && !employee.getEmail().isBlank()) {
+        if (employee.getEmail() == null || employee.getEmail().isBlank()) {
+            existingEmployee.setEmail(null);
+        } else {
             existingEmployee.setEmail(employee.getEmail());
         }
         if (employee.getPhone() != null && !employee.getPhone().isBlank()) {
