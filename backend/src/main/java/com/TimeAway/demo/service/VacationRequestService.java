@@ -1,19 +1,18 @@
 package com.TimeAway.demo.service;
 
-import com.TimeAway.demo.dto.EmployeeDTO;
 import com.TimeAway.demo.dto.VacationRequestDto;
 import com.TimeAway.demo.entity.VacationRequest;
 import com.TimeAway.demo.enums.RequestStatus;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public interface VacationRequestService {
     VacationRequestDto getVacationRequest(long id);
+    List<VacationRequestDto> getVacationRequestsByStatus(@Param("status") RequestStatus status);
+    List<VacationRequestDto> getVacationRequests();
     Page<VacationRequestDto> findByEmployeeId(int page, int size, Integer id);
     VacationRequestDto approvedByResponsible(long id, String responsible);
     VacationRequestDto rejectByResponsible(long id, String responsible);
@@ -22,6 +21,7 @@ public interface VacationRequestService {
     Page<VacationRequestDto> findAffectedRequestsByStatusAndDepartment( long id,
                                                          int page, int size);
     Page<VacationRequestDto> getVacationRequests(int page, int size);
+    Page<VacationRequestDto> getCurrentApprovedRequests(int page, int size);
     Page<VacationRequestDto> getVacationRequestsByStatus(int page, int size, RequestStatus status);
     Long getCountOfRequestsByStatusAndYear( RequestStatus status);
     Page<VacationRequestDto> getNonRejectedStatus(int page, int size);

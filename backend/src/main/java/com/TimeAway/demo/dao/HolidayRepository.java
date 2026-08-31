@@ -16,4 +16,6 @@ public interface HolidayRepository extends JpaRepository<Holiday, Long> {
 
     @Query("SELECT h FROM Holiday h WHERE h.date BETWEEN :startDate AND :endDate")
     Set<Holiday> findHolidaysBetweenDates(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+
 }

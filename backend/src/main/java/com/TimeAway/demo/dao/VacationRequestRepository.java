@@ -2,6 +2,7 @@ package com.TimeAway.demo.dao;
 
 import com.TimeAway.demo.dto.VacationRequestDto;
 import com.TimeAway.demo.entity.VacationRequest;
+import com.TimeAway.demo.enums.HolidayStatus;
 import com.TimeAway.demo.enums.RequestStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -61,6 +62,12 @@ public interface VacationRequestRepository extends JpaRepository<VacationRequest
             @Param("oldHolEnd") LocalDate oldHolEnd,
             @Param("newHolStart") LocalDate newHolStart,
             @Param("newHolEnd") LocalDate newHolEnd
+    );
+
+    @Query("SELECT v FROM VacationRequest v JOIN FETCH v.employee " +
+            "WHERE v.status = :status order by v.submittedAt asc")
+    List<VacationRequest> findRequestsByStatus(
+            @Param("status") RequestStatus status
     );
 
     @Query("SELECT COUNT(v) FROM VacationRequest v " +

@@ -11,6 +11,7 @@ export default function AppLayout({ currentUser, children }) {
   const location = useLocation();
   const { logout } = useAuth();
   const [requests, setRequests] = useState([]);
+  const [isExporting, setIsExporting] = useState(false);
   
   useEffect(() => {
     const loadRequests = async () => {
@@ -30,6 +31,36 @@ export default function AppLayout({ currentUser, children }) {
     navigate('/login');
   };
 
+  const handleDownloadExcelReport = async () => {
+    if (isExporting) return;
+
+    setIsExporting(true);
+
+    try {
+      const response = await requestService.downloadExcelReport();
+      const blob = new Blob([response.data], {
+        type: response.headers?.['content-type'] || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+
+      const contentDisposition = response.headers?.['content-disposition'] || '';
+      const match = contentDisposition.match(/filename\s*=\s*"?([^";]+)"?/i);
+      const fileName = match?.[1] || 'timeaway-report.xlsx';
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erreur lors du téléchargement du fichier Excel :', error);
+    } finally {
+      setTimeout(() => setIsExporting(false), 500);
+    }
+  };
+
   const totalPending = requests.content?.filter(r => r.status === "PENDING").length || 0  ;
 
   const navItems = [
@@ -39,7 +70,8 @@ export default function AppLayout({ currentUser, children }) {
     { path: "/new-request", icon: "+", label: "Nouvelle demande", adminOnly: false },
     { path: "/new-employee", icon: "+", label: "Ajouter un employé", adminOnly: true },
     { path: "/balances", icon: "◎", label: "Soldes de l'équipe", adminOnly: true },
-    { path: "/holidays", icon: "📅", label: "Jours fériés", adminOnly: true }
+    { path: "/holidays", icon: "📅", label: "Jours fériés", adminOnly: true },
+    { action: 'export', icon: '↓', label: 'Exporter Excel', adminOnly: true }
   ];
   
   const visibleNavItems = navItems.filter(item => {
@@ -73,12 +105,19 @@ export default function AppLayout({ currentUser, children }) {
         <div className="sidebar">
           {visibleNavItems.map(item => (
             <button
-              key={item.path}
-              className={`nav-btn ${location.pathname === item.path ? "active" : ""}`}
-              onClick={() => navigate(item.path)}
+              key={item.path || item.action || item.label}
+              className={`nav-btn ${item.path && location.pathname === item.path ? "active" : ""}`}
+              disabled={item.action === 'export' && isExporting}
+              onClick={() => {
+                if (item.action === 'export') {
+                  handleDownloadExcelReport();
+                  return;
+                }
+                navigate(item.path);
+              }}
             >
               <span className="nav-icon">{item.icon}</span>
-              {item.label}
+              {item.action === 'export' && isExporting ? 'Fichier Excel généré...' : item.label}
             </button>
           ))}
         </div>

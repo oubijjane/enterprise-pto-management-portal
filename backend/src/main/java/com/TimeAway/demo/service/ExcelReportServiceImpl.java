@@ -1,17 +1,21 @@
 package com.TimeAway.demo.service;
 
+import com.TimeAway.demo.dto.VacationRequestDto;
 import com.TimeAway.demo.entity.Employee;
+import com.TimeAway.demo.entity.VacationRequest;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
+import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
 
+@Service
 public class ExcelReportServiceImpl implements ExcelReportService {
     @Override
-    public ByteArrayInputStream exportEmployeesToExcel(List<Employee> employees) {
+    public ByteArrayInputStream exportEmployeesToExcel(List<VacationRequestDto> vacationRequests) {
         System.setProperty("java.awt.headless", "true");
         // SXSSFWorkbook(100) -> keeps only 100 rows in RAM
         try (SXSSFWorkbook workbook = new SXSSFWorkbook(100);
@@ -25,12 +29,11 @@ public class ExcelReportServiceImpl implements ExcelReportService {
             // 1. Create Styles (Header and Date)
             CellStyle headerStyle = createHeaderStyle(workbook);
             CellStyle dateStyle = workbook.createCellStyle();
-            dateStyle.setDataFormat(workbook.getCreationHelper().createDataFormat().getFormat("dd-mm-yyyy hh:mm:ss"));
+            dateStyle.setDataFormat(workbook.getCreationHelper().createDataFormat().getFormat("dd-mm-yyyy"));
 
             // 2. Create Header Row
-            String[] columns = {"Non & Prénom", "Libelle","Matricule", "Companie",
-                    "Destination", "Transport", "Status", "Commentaire",
-                    "dernière mise à jour","Numéro de commande", "Num Dossier"};
+            String[] columns = {"date debut", "date fin","nom employe", "type",
+                    "nombre de jour"};
             Row headerRow = sheet.createRow(0);
             for (int i = 0; i < columns.length; i++) {
                 Cell cell = headerRow.createCell(i);
@@ -39,29 +42,23 @@ public class ExcelReportServiceImpl implements ExcelReportService {
             }
 
             // 3. Fill Data
-           /* int rowIdx = 1;
-            for (Employee employee : employees) {
+           int rowIdx = 1;
+            for (VacationRequestDto vacationRequest : vacationRequests) {
                 Row row = sheet.createRow(rowIdx++);
 
                 Cell dateCell = row.createCell(0);
-                dateCell.setCellValue(employee.getCreatedAt());
+                dateCell.setCellValue(vacationRequest.getFromDate());
                 dateCell.setCellStyle(dateStyle);
-                String fullName =employee.getLastName() + employee.getFirstName();
-                row.createCell(1).setCellValue(fullName);
-                row.createCell(2).setCellValue(employee.getRegistrationNumber());
-                row.createCell(3).setCellValue(employee.getCompany().getCompanyName());
-                row.createCell(4).setCellValue(employee.getCity() != null ? employee.getCity().getCityName() : "");
+                String fullName =vacationRequest.getEmployeeDTO().getFirstName()
+                        + " " + vacationRequest.getEmployeeDTO().getLastName();
+                Cell dateCell2 = row.createCell(1);
+                dateCell2.setCellValue(vacationRequest.getToDate());
+                dateCell2.setCellStyle(dateStyle);
+                row.createCell(2).setCellValue(fullName);
+                row.createCell(3).setCellValue(vacationRequest.getReason());
+                row.createCell(4).setCellValue(vacationRequest.getNumberOfDays().doubleValue());
 
-                setSafeStringValue(row,5, (employee.getTransitCompany() != null ? employee.getTransitCompany().getName() : ""));
-                row.createCell(6).setCellValue(employee.getStatus().getLabel());
-                setSafeStringValue(row,7, employee.getComment());
-                Cell dataCell2 = row.createCell(8);
-                dataCell2.setCellValue(employee.getUpdatedAt());
-                dataCell2.setCellStyle(dateStyle);
-                row.createCell(9).setCellValue(employee.getId());
-                row.createCell(10).setCellValue(employee.getFileNumber());
             }
-*/
             // 4. Set Fixed Column Widths (Mandatory for SXSSF as autoSize is slow/restricted)
             for (int i = 0; i < columns.length; i++) {
                 sheet.setColumnWidth(i, 5000);

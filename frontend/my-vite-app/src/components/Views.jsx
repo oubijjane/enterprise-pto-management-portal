@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Field, Stat, RequestRow } from './Shared';
 import { addNewEmployee, getMyProfile } from '../service/employeeService';
 
-export function DashboardView({ requests, employees, onUpdate, setView, pendingCount, approvedCount }) {
+export function DashboardView({ requests, approvedRequests, approvedPage, approvedTotalPages, setApprovedPage, onSelectApprovedRequest, employees, onUpdate, setView, pendingCount, approvedCount }) {
   const totalPending = pendingCount ;
   const totalApproved = approvedCount ;
 
@@ -26,8 +26,8 @@ export function DashboardView({ requests, employees, onUpdate, setView, pendingC
         </div>
       </div>
 
-      <div className="card">
-        <div className="flex-row justify-between" style={{ marginBottom: "20px" }}>
+      <div className="card" style={{ marginBottom: "20px"}}>
+        <div className="flex-row justify-between" style={{ marginBottom: "20px"}}>
           <h2 className="section-title" style={{ margin: 0 }}>Demandes récentes</h2>
           <button onClick={() => setView("requests")} className="btn-text">Voir tout →</button>
         </div>
@@ -36,6 +36,51 @@ export function DashboardView({ requests, employees, onUpdate, setView, pendingC
             <RequestRow key={r.id != null ? r.id : `request-${index}`} r={r} onUpdate={onUpdate} compact />
           ))}
         </div>
+      </div>
+
+      <div className="card">
+        <div className="flex-row justify-between" style={{ marginBottom: "20px" }}>
+          <h2 className="section-title" style={{ margin: 0 }}>congés approuvés de cette semaine</h2>
+        </div>
+        <div className="flex-col">
+          {approvedRequests?.content?.length > 0 ? (
+            approvedRequests.content.map((request, index) => (
+              <RequestRow
+                key={request.id != null ? request.id : `approved-request-${index}`}
+                r={request}
+                compact
+                onSelect={onSelectApprovedRequest}
+              />
+            ))
+          ) : (
+            <p className="text-muted text-sm">Aucun congé approuvé en cours.</p>
+          )}
+        </div>
+        {approvedTotalPages > 1 && (
+          <div className="pagination" style={{ marginTop: '20px', justifyContent: 'center' }}>
+            <button
+              disabled={approvedPage === 0}
+              onClick={() => setApprovedPage(page => page - 1)}
+            >
+              Précédent
+            </button>
+            {Array.from({ length: approvedTotalPages }, (_, page) => (
+              <button
+                key={page}
+                className={approvedPage === page ? 'active' : ''}
+                onClick={() => setApprovedPage(page)}
+              >
+                {page + 1}
+              </button>
+            ))}
+            <button
+              disabled={approvedPage >= approvedTotalPages - 1}
+              onClick={() => setApprovedPage(page => page + 1)}
+            >
+              Suivant
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

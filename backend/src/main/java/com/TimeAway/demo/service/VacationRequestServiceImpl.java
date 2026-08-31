@@ -55,6 +55,17 @@ public class VacationRequestServiceImpl implements VacationRequestService {
     }
 
     @Override
+    public List<VacationRequestDto> getVacationRequestsByStatus(RequestStatus status) {
+        return vacationRequestRepository.findRequestsByStatus(status).stream()
+                .map(request -> mapToDTO(request)).toList();
+    }
+
+    @Override
+    public List<VacationRequestDto> getVacationRequests() {
+        return vacationRequestRepository.findAll().stream().map( request -> mapToDTO(request)).toList();
+    }
+
+    @Override
     public Page<VacationRequestDto> findByEmployeeId(int page, int size, Integer id) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("submittedAt").descending());
         Page<VacationRequestDto> requests = vacationRequestRepository.findAllByEmployeeId(id, pageable)
@@ -159,7 +170,7 @@ public class VacationRequestServiceImpl implements VacationRequestService {
         LocalDate fromDate = vacationRequest.getFromDate();
         LocalDate toDate = vacationRequest.getToDate();
         return vacationRequestRepository.findAffectedRequestsByStatusAndDepartment(null, departmentId,
-                fromDate, toDate, pageable) .map(v -> mapToDTO(v));
+                fromDate, toDate, pageable).map(v -> mapToDTO(v));
     }
 
     private VacationRequest getVacationRequestById(long id) {
@@ -173,6 +184,14 @@ public class VacationRequestServiceImpl implements VacationRequestService {
                 .map(request -> mapToDTO(request));
         return requests;
 
+    }
+
+    @Override
+    public Page<VacationRequestDto> getCurrentApprovedRequests(int page, int size) {
+        LocalDate today = LocalDate.now();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("submittedAt").descending());
+        return vacationRequestRepository.findRequestsByDateAndStatus(today,RequestStatus.APPROVED, pageable)
+                .map(v -> mapToDTO(v));
     }
 
     @Override

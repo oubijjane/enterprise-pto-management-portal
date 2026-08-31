@@ -3,13 +3,19 @@ package com.TimeAway.demo.restController;
 import com.TimeAway.demo.dto.VacationRequestDto;
 import com.TimeAway.demo.entity.VacationRequest;
 import com.TimeAway.demo.enums.RequestStatus;
+import com.TimeAway.demo.service.ExcelReportService;
 import com.TimeAway.demo.service.VacationRequestService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayInputStream;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
@@ -19,10 +25,12 @@ import java.util.List;
 public class VacationRequestController {
 
     private VacationRequestService vacationRequestService;
+    private ExcelReportService excelReportService;
 
     @Autowired
-    public VacationRequestController(VacationRequestService vacationRequestService) {
+    public VacationRequestController(VacationRequestService vacationRequestService, ExcelReportService excelReportService) {
         this.vacationRequestService = vacationRequestService;
+        this.excelReportService = excelReportService;
     }
 
     @PostMapping("{id}")
@@ -39,6 +47,12 @@ public class VacationRequestController {
     public ResponseEntity<Page<VacationRequestDto>> getVacationRequest( @RequestParam(defaultValue = "0") int page,
                                                                         @RequestParam(defaultValue = "10") int size) {
         return new ResponseEntity<>(vacationRequestService.getPendingRequests(page, size), HttpStatus.OK);
+    }
+
+    @GetMapping("/current-approved")
+    public ResponseEntity<Page<VacationRequestDto>> getCurrentApprovedVacationRequest( @RequestParam(defaultValue = "0") int page,
+                                                                        @RequestParam(defaultValue = "10") int size) {
+        return new ResponseEntity<>(vacationRequestService.getCurrentApprovedRequests(page, size), HttpStatus.OK);
     }
 
     @GetMapping("/employee/{id}")
@@ -131,5 +145,27 @@ public class VacationRequestController {
     @PutMapping("/rejectCancellation/{id}")
     public ResponseEntity<VacationRequest> rejectCancellation(@PathVariable long id) {
         return new ResponseEntity<>(vacationRequestService.rejectCancellation(id), HttpStatus.OK);
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<InputStreamResource> exportToExcel(
+                                                             @RequestParam(required = false) String company,
+                                                             @RequestParam(required = false) String city,
+                                                             @RequestParam(required = false) String reg,
+                                                             @RequestParam(required = false) String status) {
+
+        // Reuse your optimized logic but without Pageable (to get ALL matching results)
+        List<VacationRequestDto> vacationRequests = vacationRequestService
+                .getVacationRequestsByStatus(RequestStatus.APPROVED);
+
+        ByteArrayInputStream in = excelReportService.exportEmployeesToExcel(vacationRequests);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=employee_report.xlsx");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(new InputStreamResource(in));
     }
 }

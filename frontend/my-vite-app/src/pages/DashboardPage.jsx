@@ -7,7 +7,10 @@ import { DashboardView } from '../components/Views';
 
 export default function DashboardPage() {
   const [requests, setRequests] = useState([]);
+  const [approvedRequests, setApprovedRequests] = useState({ content: [] });
   const [employees, setEmployees] = useState([]);
+  const [approvedPage, setApprovedPage] = useState(0);
+  const [approvedTotalPages, setApprovedTotalPages] = useState(0);
   const navigate = useNavigate();
   const { user } = useAuth();
   const [pendingCount, setPendingCount] = useState();
@@ -39,13 +42,40 @@ export default function DashboardPage() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    const loadApprovedRequests = async () => {
+      try {
+        const response = await requestService.getCurrentApprovedRequests(approvedPage, 7);
+        setApprovedRequests(response);
+        setApprovedTotalPages(response?.page?.totalPages || 0);
+      } catch (err) {
+        console.error('Dashboard approved requests fetch failed:', err);
+        setApprovedRequests({ content: [] });
+        setApprovedTotalPages(0);
+      }
+    };
+
+    loadApprovedRequests();
+  }, [approvedPage]);
+
   const handleUpdate = (id, newStatus) => {
     setRequests(requests.map(r => r.id === id ? { ...r, status: newStatus } : r));
+  };
+
+  const handleSelectApprovedRequest = (request) => {
+    if (request?.id != null) {
+      navigate(`/requests/${request.id}`);
+    }
   };
 
   return (
     <DashboardView
       requests={requests}
+      approvedRequests={approvedRequests}
+      approvedPage={approvedPage}
+      approvedTotalPages={approvedTotalPages}
+      setApprovedPage={setApprovedPage}
+      onSelectApprovedRequest={handleSelectApprovedRequest}
       employees={employees}
       onUpdate={handleUpdate}
       pendingCount={pendingCount}

@@ -27,6 +27,17 @@ const getAllRequests = async (page = 0, size = 7) => {
     }
 };
 
+const getCurrentApprovedRequests = async (page = 0, size = 7) => {
+    try {
+        const response = await api.get(`/v1/request/current-approved?page=${page}&size=${size}`);
+        const requests = response.data || [];
+        return requests;
+    } catch (error) {
+        console.error('Error fetching requests:', error);
+        throw error;
+    }
+};
+
 export const getAllRequestsByStatus = async (page = 0, size = 7, status) => {
     try {
         // Safely build the query string. If status is null, it is simply omitted.
@@ -158,6 +169,19 @@ const approveByManger = async (id, endpoint) => {
     }
 };
 
+// For the Excel Export (BLOB)
+const downloadExcelReport = async () => {
+    try {
+        const response = await api.get('/v1/request/export', {
+            responseType: 'blob' // CRITICAL for SXSSFWorkbook binary stream
+        });
+        return response; 
+    } catch (error) {
+        console.error("Excel download error:", error);
+        throw error;
+    }
+};
+
 const rejectByManger = async (id, endpoint) => {
     try {
         const response = await api.put(`/v1/request/rejectByResponsible/${id}`);
@@ -173,4 +197,5 @@ const rejectRequest = async (id) => updateRequestStatus(id, 'rejected');
 
 export default { getPendingRequests, getAllRequests, getRequestById, approveRequest, 
     rejectRequest, getNonRejectedRequests,getAllRequestsByStatus, 
-    getRequestByEmployeeId, countRequestByStatus, getAllRequestsByStatusByUserDepartment, approveByManger, rejectByManger, getAllRequestsUserDepartmentbyStatus, updateRequest };
+    getRequestByEmployeeId, countRequestByStatus, getAllRequestsByStatusByUserDepartment, approveByManger, rejectByManger, 
+    getAllRequestsUserDepartmentbyStatus, updateRequest, getCurrentApprovedRequests, downloadExcelReport };
